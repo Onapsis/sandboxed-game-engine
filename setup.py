@@ -9,7 +9,7 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
-    name="sandboxed-game-engine",
+    name="turnboxed",
     version="0.0.4",
     author="Pedro Guridi",
     author_email="pedro.guridi@gmail.com",
@@ -18,9 +18,14 @@ setup(
     license="MIT",
     keywords="game engine coding challenge",
     url="http://packages.python.org/sandboxed-game-engine",
-    packages=['sandboxed_game_engine'],
+    packages=['turnboxed'],
+    provides=['turnboxed'],
+    install_requires=[
+        "requests",
+    ],
     long_description=read('README'),
     classifiers=[
+        'Intended Audience :: Developers',
         "Development Status :: 4 - Beta",
         "Topic :: Utilities",
         "License :: OSI Approved :: BSD License",

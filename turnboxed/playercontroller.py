@@ -4,8 +4,9 @@ import httplib
 import requests
 import threading
 
-from multiprocessing import Queue, Event
+from multiprocessing import Queue
 import json
+import shutil
 
 PYPY_PATH = '/home/pguridi/src/pypy-2.6.1-src'
 EXECUTABLE = os.path.join(PYPY_PATH, 'pypy/goal/pypy-c')
@@ -19,6 +20,9 @@ import pypy
 LIB_ROOT = os.path.dirname(os.path.dirname(pypy.__file__))
 
 DEBUG = False
+
+from . import basebot
+BASE_BOT_FILE = basebot.__file__
 
 
 class SandboxedPlayerController(VirtualizedSocketProc, SimpleIOSandboxedProc):
@@ -64,6 +68,7 @@ class SandboxedPlayerController(VirtualizedSocketProc, SimpleIOSandboxedProc):
         exclude = ['.pyc', '.pyo']
         tmpdirnode = RealDir(self.sand_box_dir, exclude=exclude)
         libroot = str(LIB_ROOT)
+        shutil.copy(BASE_BOT_FILE, self.sand_box_dir)
 
         return Dir({
             'bin': Dir({
@@ -139,14 +144,13 @@ class SandboxedPlayerController(VirtualizedSocketProc, SimpleIOSandboxedProc):
             player_msg = json.loads(data)
             player_msg["BOT_COOKIE"] = self.bot_cookie
 
-            if player_msg["TURN_COOKIE"] == self.turn_cookie:
+            if self.on_turn_event.is_set() and player_msg["TURN_COOKIE"] == self.turn_cookie:
+                # Synchronous method.
+                # Should connect to the Game Controller to evaluate action
                 self.send_to_game_controller(player_msg)
                 return 0
             else:
                 self.logg("BAD TURN. %s" % player_msg)
-                # Synchronous method.
-                # Should connect to the Game Controller to evaluate action
-                #self.logg("BAD TURN!")
                 return 0
         else:
             return super(VirtualizedSocketProc, self).do_ll_os__ll_os_write(
