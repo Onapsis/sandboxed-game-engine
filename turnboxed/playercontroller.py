@@ -1,4 +1,3 @@
-import sys
 import os
 import httplib
 import requests
@@ -8,21 +7,15 @@ from multiprocessing import Queue
 import json
 import shutil
 
-PYPY_PATH = '/home/pguridi/src/pypy-2.6.1-src'
-EXECUTABLE = os.path.join(PYPY_PATH, 'pypy/goal/pypy-c')
-sys.path.insert(0, os.path.realpath(PYPY_PATH))
+from turnboxed import EXECUTABLE, LIB_ROOT, DEBUG, BASE_BOT_FILE
+
+# PYPY_PATH = '/home/pguridi/src/pypy-2.6.1-src'
+# EXECUTABLE = os.path.join(PYPY_PATH, 'pypy/goal/pypy-c')
+# sys.path.insert(0, os.path.realpath(PYPY_PATH))
 
 from rpython.translator.sandbox.sandlib import SimpleIOSandboxedProc
 from rpython.translator.sandbox.sandlib import VirtualizedSocketProc
-
 from rpython.translator.sandbox.vfs import Dir, RealDir, RealFile
-import pypy
-LIB_ROOT = os.path.dirname(os.path.dirname(pypy.__file__))
-
-DEBUG = False
-
-from . import basebot
-BASE_BOT_FILE = basebot.__file__
 
 
 class SandboxedPlayerController(VirtualizedSocketProc, SimpleIOSandboxedProc):

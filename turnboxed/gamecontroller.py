@@ -77,7 +77,7 @@ class BaseGameController:
     def evaluate_turn(self, player, request):
         raise NotImplementedError
 
-    def _start_socket_server(self):
+    def _start_http_server(self):
         self._server = ThreadedHTTPServer((self.server_host, self.server_port), GameControllerHTTPRequestHandler)
         print('http server is running...')
         self._server.game_controller = self
@@ -124,7 +124,7 @@ class BaseGameController:
         return None
 
     def run(self):
-        self._start_socket_server()
+        self._start_http_server()
         self.run_stdout_thread()
 
         # Start all the sandbox processes
