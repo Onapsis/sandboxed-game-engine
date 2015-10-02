@@ -9,6 +9,8 @@ from multiprocessing import Queue, Event, Process
 
 from .playercontroller import SandboxedPlayerController
 
+class GameFinishedException(Exception):
+    pass
 
 def get_cookie():
     return uuid.uuid4().hex[0:8]
@@ -53,6 +55,7 @@ class BaseGameController:
         self.server_port = 9999
         self.rounds = 100
         self.players = {}
+        self.finish_game_event = Event()
 
         self._bot_in_turn = None
         self.turns_queue = Queue()
@@ -64,7 +67,6 @@ class BaseGameController:
 
     def handle_player_request(self, data, bot_cookie):
         if self.players[bot_cookie]["turn_event"].is_set() and self._bot_in_turn == bot_cookie:
-            self.log_msg("GOT POST FROM BOT %s" % bot_cookie)
             ret = self.evaluate_turn(data, bot_cookie)
             self.players[bot_cookie]["turn_event"].clear()
             self._bot_in_turn = None
@@ -79,7 +81,6 @@ class BaseGameController:
 
     def _start_http_server(self):
         self._server = ThreadedHTTPServer((self.server_host, self.server_port), GameControllerHTTPRequestHandler)
-        print('http server is running...')
         self._server.game_controller = self
         self.log_msg("Starting http server server..")
         self._server_thread = threading.Thread(target=self._server.serve_forever)
@@ -123,6 +124,13 @@ class BaseGameController:
     def get_turn_data(self, bot_cookie):
         return None
 
+    def stop(self):
+        self.finish_game_event.set()
+
+    def raise_if_stopped(self):
+        if self.finish_game_event.is_set():
+            raise GameFinishedException
+
     def run(self):
         self._start_http_server()
         self.run_stdout_thread()
@@ -140,26 +148,31 @@ class BaseGameController:
             self.log_msg("Player %s connected" % self.players[p_k]["bot_cookie"])
 
         self.log_msg("Starting rounds")
-        for i in range(0, self.rounds):
-            self.log_msg("\n\nStarting round %s\n" % str(i))
+        try:
+            for i in range(0, self.rounds):
+                self.raise_if_stopped()
+                self.log_msg("\n\nStarting round %s\n" % str(i))
 
-            for p_k in self.players.keys():
-                turn_cookie = get_cookie()
-                self.log_msg("\n===== STARTED TURN %s FOR BOT %s" % (turn_cookie, self.players[p_k]["bot_cookie"]))
-                self._bot_in_turn = p_k
-                self.players[p_k]["turn_event"].set()
-                self.players[p_k]["main_queue"].put({"MSG": "TURN",
-                                                     "DATA": self.get_turn_data(p_k),
-                                                     "TURN_COOKIE": turn_cookie})
+                for p_k in self.players.keys():
+                    self.raise_if_stopped()
+                    turn_cookie = get_cookie()
+                    self.log_msg("\n===== STARTED TURN %s FOR BOT %s" % (turn_cookie, self.players[p_k]["bot_cookie"]))
+                    self._bot_in_turn = p_k
+                    self.players[p_k]["turn_event"].set()
+                    self.players[p_k]["main_queue"].put({"MSG": "TURN",
+                                                         "DATA": self.get_turn_data(p_k),
+                                                         "TURN_COOKIE": turn_cookie})
 
-                # Wait for the player to finish the turn...
-                while self.players[p_k]["turn_event"].is_set():
-                    # turn based timeout check could go here
-                    self.log_msg("WAITING FOR PLAYER... %s" % p_k)
-                    time.sleep(0.05)
+                    # Wait for the player to finish the turn...
+                    while self.players[p_k]["turn_event"].is_set():
+                        # turn based timeout check could go here
+                        self.log_msg("WAITING FOR PLAYER... %s" % p_k)
+                        time.sleep(0.02)
 
-                self._bot_in_turn = None
-                self.log_msg("===== ENDED TURN %s FOR BOT %s" % (turn_cookie, self.players[p_k]["bot_cookie"]))
+                    self._bot_in_turn = None
+                    self.log_msg("===== ENDED TURN %s FOR BOT %s" % (turn_cookie, self.players[p_k]["bot_cookie"]))
+        except GameFinishedException, e:
+            self.log_msg("FINISHED GAME")
 
         for p_k in self.players.keys():
             self.players[p_k]["main_queue"].put({"MSG": "QUIT"})
@@ -170,3 +183,4 @@ class BaseGameController:
         self.log_msg("Shutting down http server...")
         time.sleep(2)
         self._server.shutdown()
+        self.stop_event.set()
