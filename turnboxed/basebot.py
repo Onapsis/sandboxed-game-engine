@@ -29,7 +29,12 @@ class BaseBot(object):
         else:
             self._turn_cookie = msg['TURN_COOKIE']
             try:
-                turn_response = self.on_turn(msg)
+                if "DATA" in msg.keys():
+                    feedback = msg["DATA"]
+                else:
+                    feedback = None
+
+                turn_response = self.on_turn(feedback)
                 os.write(123456789, json.dumps({"TURN_COOKIE": self._turn_cookie,
                                                 "MSG": turn_response}))
             except Exception, e:
