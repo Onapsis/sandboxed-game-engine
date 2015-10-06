@@ -10,7 +10,7 @@ class BaseBot(object):
 
     def log_exception(self, excpt):
         os.write(123456789, json.dumps({"TURN_COOKIE": self._turn_cookie,
-                                        "EXCEPTION": str(excpt)}))
+                                        "EXCEPTION": excpt.__class__.__name__ + " : " + str(excpt)}))
 
     def on_turn(self, msg):
         raise NotImplementedError
@@ -24,9 +24,9 @@ class BaseBot(object):
         else:
             self._turn_cookie = msg['TURN_COOKIE']
             try:
-                if "DATA" in msg.keys():
+                try:
                     feedback = msg["DATA"]
-                else:
+                except:
                     feedback = None
 
                 turn_response = self.on_turn(feedback)
@@ -48,5 +48,6 @@ if __name__ == "__main__":
         klass = globals()[cs[-1]]
         bot_instance = klass()
         bot_instance._get_turns()
+
     else:
         print("No valid bot found")
