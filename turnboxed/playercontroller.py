@@ -49,7 +49,7 @@ class SandboxedPlayerController(VirtualizedSocketProc, SimpleIOSandboxedProc):
 
         self.debug = DEBUG
         self.turn_cookie = None
-        self.script_path = os.path.join(self.virtual_cwd, os.path.basename(player_script))
+        self.script_path = os.path.join(self.virtual_cwd, "basebot.py")
         super(SandboxedPlayerController, self).__init__([self.argv0] + [self.script_path],
                                                 executable=self.executable)
 

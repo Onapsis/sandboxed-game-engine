@@ -1,14 +1,12 @@
 import os
 import json
+import re
 
 
 class BaseBot(object):
 
     def __init__(self):
-        self._exit = False
         self._turn_cookie = None
-        self._actions = []
-        self._get_turns()
 
     def log_exception(self, excpt):
         os.write(123456789, json.dumps({"TURN_COOKIE": self._turn_cookie,
@@ -16,9 +14,6 @@ class BaseBot(object):
 
     def on_turn(self, msg):
         raise NotImplementedError
-
-    def attack(self, victim):
-        self._actions.append('%'.join(["ATTACK", victim]))
 
     def _get_turns(self):
         self._turn_cookie = None
@@ -41,3 +36,17 @@ class BaseBot(object):
                 self.log_exception(e)
 
             self._get_turns()
+
+
+if __name__ == "__main__":
+    import script
+    from script import *
+    with open(script.__file__, 'r') as f:
+        script_content = f.read()
+    cs = re.findall('class\ (.*?)\(BaseBot', script_content, re.DOTALL)
+    if len(cs) > 0:
+        klass = globals()[cs[-1]]
+        bot_instance = klass()
+        bot_instance._get_turns()
+    else:
+        print("No valid bot found")

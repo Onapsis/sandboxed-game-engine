@@ -9,8 +9,10 @@ from multiprocessing import Queue, Event, Process
 
 from .playercontroller import SandboxedPlayerController
 
+
 class GameFinishedException(Exception):
     pass
+
 
 def get_cookie():
     return uuid.uuid4().hex[0:8]
