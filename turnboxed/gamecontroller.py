@@ -14,6 +14,14 @@ class GameFinishedException(Exception):
     pass
 
 
+class GameLogicException(Exception):
+    pass
+
+
+class PlayerTimeoutException(Exception):
+    pass
+
+
 def get_cookie():
     return uuid.uuid4().hex[0:8]
 
@@ -58,6 +66,7 @@ class BaseGameController:
         self.rounds = 100
         self.players = {}
         self.finish_game_event = Event()
+        self._exception = None
 
         self._bot_in_turn = None
         self.turns_queue = Queue()
@@ -69,10 +78,17 @@ class BaseGameController:
 
     def handle_player_request(self, data, bot_cookie):
         if self.players[bot_cookie]["turn_event"].is_set() and self._bot_in_turn == bot_cookie:
-            ret = self.evaluate_turn(data, bot_cookie)
-            self.players[bot_cookie]["turn_event"].clear()
-            self._bot_in_turn = None
-            return ret
+            try:
+                ret = self.evaluate_turn(data, bot_cookie)
+                return ret
+            except Exception, e:
+                # Error in game logic
+                self.log_msg("GAME LOGIC ERROR: " + str(e))
+                self.stop()
+                self._exception = (GameLogicException, str(e))
+            finally:
+                self.players[bot_cookie]["turn_event"].clear()
+                self._bot_in_turn = None
         else:
             # Wrong turn!
             self.log_msg("WRONG TURN FROM BOT %s" % bot_cookie)
@@ -103,7 +119,7 @@ class BaseGameController:
                                     "connected_event": connected_event,
                                     "main_queue": main_queue}
 
-    def run_player_process(self, player_d):
+    def run_player_process(self, player_d, p_k):
         p = SandboxedPlayerController(player_d["player_id"], os.path.abspath(player_d["player_script"]),
                                     player_d["bot_cookie"], player_d["turn_event"],
                                     player_d["connected_event"], player_d["main_queue"],
@@ -133,22 +149,7 @@ class BaseGameController:
         if self.finish_game_event.is_set():
             raise GameFinishedException
 
-    def run(self):
-        self._start_http_server()
-        self.run_stdout_thread()
-
-        # Start all the sandbox processes
-        for p_k in self.players.keys():
-            self.log_msg("Starting player..")
-            p = Process(target=self.run_player_process, args=(self.players[p_k],))
-            p.start()
-
-            # Wait for the sandbox process to connect to the controller.
-            while not self.players[p_k]["connected_event"].is_set():
-                # wait.. (possible timeout here)
-                time.sleep(0.05)
-            self.log_msg("Player %s connected" % self.players[p_k]["bot_cookie"])
-
+    def _start_rounds(self):
         self.log_msg("Starting rounds")
         try:
             for i in range(0, self.rounds):
@@ -166,15 +167,58 @@ class BaseGameController:
                                                          "TURN_COOKIE": turn_cookie})
 
                     # Wait for the player to finish the turn...
+                    max_wait = 2
                     while self.players[p_k]["turn_event"].is_set():
-                        # turn based timeout check could go here
-                        self.log_msg("WAITING FOR PLAYER... %s" % p_k)
-                        time.sleep(0.02)
-
+                        if max_wait < 1:
+                            self.players[p_k]["main_queue"].put({"MSG": "KILL"})
+                            raise GameFinishedException("Player %s timeout." % self.players[p_k]['player_id'])
+                        else:
+                            sleep_time = 0.02
+                            max_wait -= sleep_time
+                            # turn based timeout check could go here
+                            time.sleep(sleep_time)
                     self._bot_in_turn = None
                     self.log_msg("===== ENDED TURN %s FOR BOT %s" % (turn_cookie, self.players[p_k]["bot_cookie"]))
         except GameFinishedException, e:
             self.log_msg("FINISHED GAME")
+            self._exception = (PlayerTimeoutException, str(e))
+
+    def run(self):
+        self._start_http_server()
+        self.run_stdout_thread()
+
+        startup_okay = True
+        # Start all the sandbox processes
+        for p_k in self.players.keys():
+            self.log_msg("Starting player..")
+            p = Process(target=self.run_player_process, args=(self.players[p_k], p_k))
+            p.start()
+
+            # Wait for the sandbox process to connect to the controller.
+            max_wait = 3
+            connected = True
+            while not self.players[p_k]["connected_event"].is_set():
+                if max_wait < 1 or not p.is_alive():
+                    connected = False
+                    break
+                sleep_time = 0.05
+                max_wait -= sleep_time
+                time.sleep(sleep_time)
+            if connected:
+                self.log_msg("Player %s connected" % self.players[p_k]["bot_cookie"])
+            else:
+                # player couldn't connect
+                startup_okay = False
+                err_msg = "Player %s didn't connect in time." % self.players[p_k]['player_id']
+                self.log_msg(err_msg)
+                self.players[p_k]["main_queue"].put({"MSG": "KILL"})
+                self._exception = (PlayerTimeoutException, err_msg)
+                break
+
+        if startup_okay:
+            self._start_rounds()
+        else:
+            self.stop()
 
         for p_k in self.players.keys():
             self.players[p_k]["main_queue"].put({"MSG": "QUIT"})
@@ -186,3 +230,6 @@ class BaseGameController:
         time.sleep(2)
         self._server.shutdown()
         self.stop_event.set()
+
+        if self._exception:
+            raise self._exception[0](self._exception[1])

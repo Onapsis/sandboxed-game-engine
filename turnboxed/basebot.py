@@ -48,6 +48,5 @@ if __name__ == "__main__":
         klass = globals()[cs[-1]]
         bot_instance = klass()
         bot_instance._get_turns()
-
     else:
-        print("No valid bot found")
+        raise Exception("No valid bot found")

@@ -88,6 +88,9 @@ class SandboxedPlayerController(VirtualizedSocketProc, SimpleIOSandboxedProc):
             if msg["MSG"] == "QUIT":
                 self.player_queue.put({"MSG": "QUIT"})
                 break
+            elif msg['MSG'] == 'KILL':
+                self.kill()
+                break
             elif msg["MSG"] == "TURN":
                 self.turn_cookie = msg["TURN_COOKIE"]
                 self.player_queue.put({"MSG": "TURN",

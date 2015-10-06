@@ -1,5 +1,3 @@
-__author__ = 'pguridi'
-
 import os
 import shutil
 import tempfile
@@ -84,6 +82,7 @@ def evaluate_in_sandbox(code):
 
         print "Script path: ", script_path
         p = SandboxedCodeEval(script_path)
+        p.settimeout(3)
         ret, stderr = p.run_process()
         if ret != 0:
             ret = False
