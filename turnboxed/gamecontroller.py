@@ -8,18 +8,7 @@ import json
 from multiprocessing import Queue, Event, Process
 
 from .playercontroller import SandboxedPlayerController
-
-
-class GameFinishedException(Exception):
-    pass
-
-
-class GameLogicException(Exception):
-    pass
-
-
-class PlayerTimeoutException(Exception):
-    pass
+from .exceptions import GameFinishedException, GameLogicException, TimeoutException
 
 
 def get_cookie():
@@ -181,7 +170,7 @@ class BaseGameController:
                     self.log_msg("===== ENDED TURN %s FOR BOT %s" % (turn_cookie, self.players[p_k]["bot_cookie"]))
         except GameFinishedException, e:
             self.log_msg("FINISHED GAME")
-            self._exception = (PlayerTimeoutException, str(e))
+            self._exception = (TimeoutException, str(e))
 
     def run(self):
         self._start_http_server()
@@ -212,7 +201,7 @@ class BaseGameController:
                 err_msg = "Player %s didn't connect in time." % self.players[p_k]['player_id']
                 self.log_msg(err_msg)
                 self.players[p_k]["main_queue"].put({"MSG": "KILL"})
-                self._exception = (PlayerTimeoutException, err_msg)
+                self._exception = (TimeoutException, err_msg)
                 break
 
         if startup_okay:

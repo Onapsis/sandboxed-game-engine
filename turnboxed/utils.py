@@ -1,9 +1,11 @@
 import os
+import re
 import shutil
 import tempfile
 import json
 
 from turnboxed import EXECUTABLE, DEBUG, LIB_ROOT, BASE_BOT_FILE
+from .exceptions import TimeoutException, ValidationException
 
 from rpython.translator.sandbox.sandlib import SimpleIOSandboxedProc
 from rpython.translator.sandbox.sandlib import VirtualizedSocketProc
@@ -73,26 +75,31 @@ class SandboxedCodeEval(VirtualizedSocketProc, SimpleIOSandboxedProc):
             return super(VirtualizedSocketProc, self).do_ll_os__ll_os_read(
             fd, size)
 
-def evaluate_in_sandbox(code):
-    new_temp_dir = tempfile.mkdtemp()
-    script_path = os.path.abspath(os.path.join(new_temp_dir, 'script.py'))
-    try:
-        with open(script_path, 'w') as f:
-            f.write(code)
 
-        print "Script path: ", script_path
+def evaluate_in_sandbox(code):
+    cs = re.findall('class\ (.*?)\(BaseBot', code, re.DOTALL)
+    if len(cs) == 0:
+        raise ValidationException("No valid class found")
+
+    VALIDATION_CODE = """klass = globals()['%s']
+bot_instance = klass()
+bot_instance""" % cs[-1]
+
+    try:
+        new_temp_dir = tempfile.mkdtemp()
+        script_path = os.path.abspath(os.path.join(new_temp_dir, 'script.py'))
+        with open(script_path, 'w') as f:
+            f.write(code + "\n" + VALIDATION_CODE)
+
         p = SandboxedCodeEval(script_path)
-        p.settimeout(3)
+        p.settimeout(1)
         ret, stderr = p.run_process()
-        if ret != 0:
-            ret = False
-        else:
-            ret = True
-        print "Bot evaluation result: ", ret, stderr
-        return ret, stderr
-    except Exception, e:
-        print "Error evaluating bot: ", e
-        return False, str(e)
     finally:
         if os.path.exists(new_temp_dir):
             shutil.rmtree(new_temp_dir)
+
+    if ret != 0:
+        if 'killed' in stderr:
+            raise TimeoutException("Timeout error")
+        else:
+            raise ValidationException(stderr)
