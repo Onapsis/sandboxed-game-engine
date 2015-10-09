@@ -3,7 +3,7 @@ Requirements
 
 The PyPy Sandbox must be compiled from source, with the following options
 
-python ../../rpython/bin/rpython -O2 --sandbox targetpypystandalone --withmod-_pypyjson --withmod-struct --withmod-codecs --withmod-binascii
+python ../../rpython/bin/rpython -O2 --sandbox targetpypystandalone --withmod-_pypyjson --withmod-struct --withmod-_codecs --withmod-binascii
 
 Once you have that done, change the PYPY_PATH variable in the file run_sandbox.py
 

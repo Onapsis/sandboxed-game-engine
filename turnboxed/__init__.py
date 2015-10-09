@@ -3,9 +3,10 @@ import sys
 
 PYPY_PATH = '/home/pguridi/src/pypy-2.6.1-src'
 EXECUTABLE = os.path.join(PYPY_PATH, 'pypy/goal/pypy-c')
-DEBUG = False
-
 sys.path.insert(0, os.path.realpath(PYPY_PATH))
+
+
+DEBUG = False
 
 import pypy
 LIB_ROOT = os.path.dirname(os.path.dirname(pypy.__file__))
