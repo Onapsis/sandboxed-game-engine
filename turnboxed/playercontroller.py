@@ -84,7 +84,7 @@ class SandboxedPlayerController(VirtualizedSocketProc, SimpleIOSandboxedProc):
 
     def _main_loop(self):
         while True:
-            msg = self.main_queue.get()
+            msg = json.loads(self.main_queue.get())
             if msg["MSG"] == "QUIT":
                 self.player_queue.put({"MSG": "QUIT"})
                 break

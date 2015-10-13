@@ -151,15 +151,19 @@ class BaseGameController:
                     self.log_msg("\n===== STARTED TURN %s FOR BOT %s" % (turn_cookie, self.players[p_k]["bot_cookie"]))
                     self._bot_in_turn = p_k
                     self.players[p_k]["turn_event"].set()
-                    self.players[p_k]["main_queue"].put({"MSG": "TURN",
-                                                         "DATA": self.get_turn_data(p_k),
-                                                         "TURN_COOKIE": turn_cookie})
+                    try:
+                        turn_data = {"MSG": "TURN",
+                                     "DATA": self.get_turn_data(p_k),
+                                     "TURN_COOKIE": turn_cookie}
 
+                        self.players[p_k]["main_queue"].put(json.dumps(turn_data))
+                    except Exception, e:
+                        raise GameLogicException("Turn data error %s" % str(e))
                     # Wait for the player to finish the turn...
                     max_wait = 2
                     while self.players[p_k]["turn_event"].is_set():
                         if max_wait < 1:
-                            self.players[p_k]["main_queue"].put({"MSG": "KILL"})
+                            self.players[p_k]["main_queue"].put(json.dumps({"MSG": "KILL"}))
                             raise GameFinishedException("Player %s timeout." % self.players[p_k]['player_id'])
                         else:
                             sleep_time = 0.02
@@ -171,6 +175,9 @@ class BaseGameController:
         except GameFinishedException, e:
             self.log_msg("FINISHED GAME")
             self._exception = (TimeoutException, str(e))
+        except GameLogicException, e:
+            self.log_msg("GAME ERROR")
+            self._exception = (GameLogicException, str(e))
 
     def run(self):
         self._start_http_server()
@@ -200,7 +207,7 @@ class BaseGameController:
                 startup_okay = False
                 err_msg = "Player %s didn't connect in time." % self.players[p_k]['player_id']
                 self.log_msg(err_msg)
-                self.players[p_k]["main_queue"].put({"MSG": "KILL"})
+                self.players[p_k]["main_queue"].put(json.dumps({"MSG": "KILL"}))
                 self._exception = (TimeoutException, err_msg)
                 break
 
@@ -210,7 +217,7 @@ class BaseGameController:
             self.stop()
 
         for p_k in self.players.keys():
-            self.players[p_k]["main_queue"].put({"MSG": "QUIT"})
+            self.players[p_k]["main_queue"].put(json.dumps({"MSG": "QUIT"}))
 
         self.log_msg("\nCLOSING..")
         # Exit
