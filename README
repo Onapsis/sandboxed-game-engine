@@ -6,7 +6,7 @@ The PyPy Sandbox must be compiled from source, with the following options
 Download pypy from https://bitbucket.org/pypy/pypy/downloads/pypy-2.6.1-src.tar.bz2
 Extract and go to pypy-2.6.1-src/pypy/goal 
 
-python ../../rpython/bin/rpython -O2 --sandbox targetpypystandalone --withmod-_pypyjson --withmod-struct --withmod-_codecs --withmod-binascii
+python ../../rpython/bin/rpython -O2 --sandbox targetpypystandalone --withmod-_pypyjson --withmod-struct --withmod-_codecs --withmod-binascii --withmod-_random
 
 Once you have that done, change the PYPY_PATH variable in the file turnboxed/__init__.py
 

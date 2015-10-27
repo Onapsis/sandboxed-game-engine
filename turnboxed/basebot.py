@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import traceback
 
 
 class BaseBot(object):
@@ -10,7 +11,8 @@ class BaseBot(object):
 
     def log_exception(self, excpt):
         os.write(123456789, json.dumps({"TURN_COOKIE": self._turn_cookie,
-                                        "EXCEPTION": excpt.__class__.__name__ + " : " + str(excpt)}))
+                                        "EXCEPTION": excpt.__class__.__name__ + " : " + str(excpt),
+                                        "TRACEBACK": traceback.format_exc()}))
 
     def on_turn(self, msg):
         raise NotImplementedError

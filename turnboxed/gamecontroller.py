@@ -164,7 +164,7 @@ class BaseGameController:
                     while self.players[p_k]["turn_event"].is_set():
                         if max_wait < 1:
                             self.players[p_k]["main_queue"].put(json.dumps({"MSG": "KILL"}))
-                            raise GameFinishedException("Player %s timeout." % self.players[p_k]['player_id'])
+                            raise GameFinishedException("Player %s turn timeout." % self.players[p_k]['player_id'])
                         else:
                             sleep_time = 0.02
                             max_wait -= sleep_time
@@ -174,7 +174,6 @@ class BaseGameController:
                     self.log_msg("===== ENDED TURN %s FOR BOT %s" % (turn_cookie, self.players[p_k]["bot_cookie"]))
         except GameFinishedException, e:
             self.log_msg("FINISHED GAME")
-            self._exception = (TimeoutException, str(e))
         except GameLogicException, e:
             self.log_msg("GAME ERROR")
             self._exception = (GameLogicException, str(e))
