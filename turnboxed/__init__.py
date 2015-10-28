@@ -1,7 +1,7 @@
 import os
 import sys
 
-PYPY_PATH = '/home/pguridi/src/pypy-2.6.1-src'
+PYPY_PATH = os.environ['PYPY_SOURCE_PATH']
 EXECUTABLE = os.path.join(PYPY_PATH, 'pypy/goal/pypy-c')
 sys.path.insert(0, os.path.realpath(PYPY_PATH))
 
