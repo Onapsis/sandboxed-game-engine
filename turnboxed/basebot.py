@@ -45,7 +45,7 @@ if __name__ == "__main__":
     from script import *
     with open(script.__file__, 'r') as f:
         script_content = f.read()
-    cs = re.findall('class\ (.*?)\(BaseBot', script_content, re.DOTALL)
+    cs = re.findall('class\ (.*?)\(BaseBot', script_content)
     if len(cs) > 0:
         klass = globals()[cs[-1]]
         bot_instance = klass()
