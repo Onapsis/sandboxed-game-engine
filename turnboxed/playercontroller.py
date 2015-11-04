@@ -7,7 +7,7 @@ from multiprocessing import Queue
 import json
 import shutil
 
-from turnboxed import EXECUTABLE, LIB_ROOT, DEBUG, BASE_BOT_FILE
+from turnboxed import EXECUTABLE, LIB_ROOT, DEBUG, BASE_BOT_FILE, GAME_BOT_FILE
 
 # PYPY_PATH = '/home/pguridi/src/pypy-2.6.1-src'
 # EXECUTABLE = os.path.join(PYPY_PATH, 'pypy/goal/pypy-c')
@@ -62,6 +62,7 @@ class SandboxedPlayerController(VirtualizedSocketProc, SimpleIOSandboxedProc):
         tmpdirnode = RealDir(self.sand_box_dir, exclude=exclude)
         libroot = str(LIB_ROOT)
         shutil.copy(BASE_BOT_FILE, self.sand_box_dir)
+        shutil.copy(GAME_BOT_FILE, self.sand_box_dir)
 
         return Dir({
             'bin': Dir({

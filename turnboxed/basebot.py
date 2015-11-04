@@ -43,9 +43,10 @@ class BaseBot(object):
 if __name__ == "__main__":
     import script
     from script import *
+
     with open(script.__file__, 'r') as f:
         script_content = f.read()
-    cs = re.findall('class\ (.*?)\(BaseBot', script_content)
+    cs = re.findall('class\ (.*?)\(GameBot', script_content)
     if len(cs) > 0:
         klass = globals()[cs[-1]]
         bot_instance = klass()
