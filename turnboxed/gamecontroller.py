@@ -53,6 +53,7 @@ class BaseGameController:
         self.server_host = "localhost"
         self.server_port = 9999
         self.rounds = 100
+        self.current_round = 0
         self.players = {}
         self.finish_game_event = Event()
         self._exception = None
@@ -142,6 +143,7 @@ class BaseGameController:
         self.log_msg("Starting rounds")
         try:
             for i in range(0, self.rounds):
+                self.current_round = i
                 self.raise_if_stopped()
                 self.log_msg("\n\nStarting round %s\n" % str(i))
 
