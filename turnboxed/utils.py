@@ -4,7 +4,7 @@ import shutil
 import tempfile
 import json
 
-from turnboxed import EXECUTABLE, DEBUG, LIB_ROOT, BASE_BOT_FILE
+from turnboxed import EXECUTABLE, DEBUG, LIB_ROOT, BASE_BOT_FILE, GAME_BOT_FILE
 from .exceptions import TimeoutException, ValidationException
 
 from rpython.translator.sandbox.sandlib import SimpleIOSandboxedProc
@@ -49,6 +49,7 @@ class SandboxedCodeEval(VirtualizedSocketProc, SimpleIOSandboxedProc):
         tmpdirnode = RealDir(self.sand_box_dir, exclude=exclude)
         libroot = str(LIB_ROOT)
         shutil.copy(BASE_BOT_FILE, self.sand_box_dir)
+        shutil.copy(GAME_BOT_FILE, self.sand_box_dir)
 
         return Dir({
             'bin': Dir({
@@ -77,9 +78,9 @@ class SandboxedCodeEval(VirtualizedSocketProc, SimpleIOSandboxedProc):
 
 
 def evaluate_in_sandbox(code):
-    cs = re.findall('class\ (.*?)\(BaseBot', code, re.DOTALL)
+    cs = re.findall('class\ (.*?)\(GameBot', code, re.DOTALL)
     if len(cs) == 0:
-        raise ValidationException("No valid class found")
+        raise ValidationException("No valid class found, you have to inherit from GameBot")
 
     VALIDATION_CODE = """klass = globals()['%s']
 bot_instance = klass()
