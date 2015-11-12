@@ -51,7 +51,7 @@ class BaseGameController:
         self._server = None
         self._server_thread = None
         self.server_host = "localhost"
-        self.server_port = 9999
+        self.server_port = 0
         self.rounds = 100
         self.current_round = 0
         self.players = {}
@@ -88,7 +88,8 @@ class BaseGameController:
         raise NotImplementedError
 
     def _start_http_server(self):
-        self._server = ThreadedHTTPServer((self.server_host, self.server_port), GameControllerHTTPRequestHandler)
+        self._server = ThreadedHTTPServer((self.server_host, 0), GameControllerHTTPRequestHandler)
+        self.server_port = self._server.server_port
         self._server.game_controller = self
         self.log_msg("Starting http server server..")
         self._server_thread = threading.Thread(target=self._server.serve_forever)
@@ -113,7 +114,7 @@ class BaseGameController:
         p = SandboxedPlayerController(player_d["player_id"], os.path.abspath(player_d["player_script"]),
                                     player_d["bot_cookie"], player_d["turn_event"],
                                     player_d["connected_event"], player_d["main_queue"],
-                                    self.std_out_queue)
+                                    self.std_out_queue, self.server_port)
         p.run_process()
 
     def run_stdout_thread(self):

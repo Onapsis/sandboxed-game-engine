@@ -24,14 +24,14 @@ class SandboxedPlayerController(VirtualizedSocketProc, SimpleIOSandboxedProc):
     virtual_env = {}
     virtual_console_isatty = True
 
-    def __init__(self, player_id, player_script, bot_cookie, turn_event, connected_event, main_queue, std_out_queue):
+    def __init__(self, player_id, player_script, bot_cookie, turn_event, connected_event, main_queue, std_out_queue, http_port):
         self.executable = os.path.abspath(EXECUTABLE)
         self.player_id = player_id
         self.bot_cookie = bot_cookie
         self.sand_box_dir = os.path.abspath(os.path.dirname(player_script))
 
         self.HOST = "localhost"
-        self.PORT = 9999
+        self.PORT = http_port
         self.conn = None
 
         # Queue for IPC with game controller
