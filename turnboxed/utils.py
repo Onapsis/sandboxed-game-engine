@@ -78,7 +78,7 @@ class SandboxedCodeEval(VirtualizedSocketProc, SimpleIOSandboxedProc):
 
 
 def evaluate_in_sandbox(code):
-    cs = re.findall('class\ (.*?)\(GameBot', code, re.DOTALL)
+    cs = re.findall('class\ (.*?)\(GameBot', code)
     if len(cs) == 0:
         raise ValidationException("No valid class found, you have to inherit from GameBot")
 
